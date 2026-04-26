@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "sources": ["model"],
+  "projections": {
+    "source": {},
+    "github-files": {
+      "plugins": {
+        "openapi": {
+          "service": "com.github.files#FilesApi",
+          "protocol": "aws.protocols#restJson1"
+        }
+      }
+    }
+  }
+}
