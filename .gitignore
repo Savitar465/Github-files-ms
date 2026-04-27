@@ -31,3 +31,22 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Sensitive / local secrets ###
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+secrets/
+**/secrets/
+credentials.json
+service-account*.json
+*.secret
+*.secrets
+*.token
+.claude/settings.local.json
