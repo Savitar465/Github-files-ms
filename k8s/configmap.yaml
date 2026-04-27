@@ -8,5 +8,8 @@ data:
   DB_HOST: "postgres"
   DB_PORT: "5432"
   DB_NAME: "github_files_db"
-  JWT_ISSUER_URI: "https://auth.example.com/realms/github-files"
   SERVER_PORT: "8080"
+  # Smoke test en cluster sin IdP: sin JWT al arrancar (no usar en prod).
+  APP_SECURITY_OAUTH2_ENABLED: "false"
+  SPRING_AUTOCONFIGURE_EXCLUDE: "org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "update"

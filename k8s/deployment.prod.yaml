@@ -5,7 +5,7 @@ metadata:
   labels:
     app: github-files-ms
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: github-files-ms
@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: github-files-ms
-          image: github-files-ms:local
+          image: ghcr.io/your-org/github-files-ms:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

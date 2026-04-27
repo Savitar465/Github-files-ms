@@ -46,6 +46,10 @@ management:
     health:
       show-details: when_authorized
 
+# Opcional: URL absoluta para el servidor "Local" en Swagger (vacío = URL relativa al context-path).
+# openapi:
+#   server-local-url: http://localhost:18080/api
+
 logging:
   level:
     root: INFO
@@ -53,3 +57,9 @@ logging:
     org.springframework.security: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Desactivar OAuth2 solo para entornos controlados (p. ej. smoke test en K8s local sin IdP).
+app:
+  security:
+    oauth2:
+      enabled: ${APP_SECURITY_OAUTH2_ENABLED:true}

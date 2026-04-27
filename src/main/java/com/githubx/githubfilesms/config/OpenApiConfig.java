@@ -20,9 +20,24 @@ public class OpenApiConfig {
     @Value("${server.servlet.context-path:/api}")
     private String contextPath;
 
+    @Value("${server.port:8080}")
+    private int serverPort;
+
+    /**
+     * Si se define (p. ej. {@code https://staging.ejemplo.com/api}), sustituye el servidor "Local" en Swagger.
+     * Por defecto vacio: se usa una URL relativa al context-path para que Swagger UI use el mismo host/puerto
+     * que el navegador (port-forward, otro localhost, Ingress, etc.).
+     */
+    @Value("${openapi.server-local-url:}")
+    private String openApiServerLocalUrl;
+
     @Bean
     public OpenAPI customOpenAPI() {
         final String securitySchemeName = "bearerAuth";
+
+        String localServerUrl = (openApiServerLocalUrl != null && !openApiServerLocalUrl.isBlank())
+                ? openApiServerLocalUrl
+                : contextPath;
 
         return new OpenAPI()
                 .info(new Info()
@@ -36,7 +51,12 @@ public class OpenApiConfig {
                                 .name("MIT")
                                 .url("https://opensource.org/licenses/MIT")))
                 .servers(List.of(
-                        new Server().url("http://localhost:8080" + contextPath).description("Local"),
+                        new Server()
+                                .url(localServerUrl)
+                                .description("Local (mismo host/puerto que el navegador; recomendado con port-forward)"),
+                        new Server()
+                                .url("http://localhost:" + serverPort + contextPath)
+                                .description("Directo al puerto del proceso Spring (solo si coincide con como abres la UI)"),
                         new Server().url("https://api.github-files.local" + contextPath).description("Production")))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
                 .components(new Components()
