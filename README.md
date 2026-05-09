@@ -45,8 +45,8 @@ docker run -d --name postgres-github \
 
 ### 3. Verificar
 
-- **API:** http://localhost:8080/api/actuator/health
-- **Swagger UI:** http://localhost:8080/api/swagger-ui.html
+- **API:** http://localhost:8081/api/actuator/health
+- **Swagger UI:** http://localhost:8081/api/swagger-ui.html
 
 ## Estructura del Proyecto
 
@@ -113,8 +113,8 @@ Endpoints publicos (sin auth):
 | `DB_NAME` | github_files_db | Nombre de la BD |
 | `DB_USERNAME` | postgres | Usuario BD |
 | `DB_PASSWORD` | postgres | Password BD |
-| `JWT_ISSUER_URI` | http://localhost:8080/realms/github-files | URI del emisor JWT |
-| `SERVER_PORT` | 8080 | Puerto del servidor |
+| `JWT_ISSUER_URI` | http://localhost:8180/realms/github-files | URI del emisor JWT (Keycloak en host **8180**: `docker run ... -p 8180:8080`) |
+| `SERVER_PORT` | 8081 | Puerto del servidor (8080 reservado a menudo a Jenkins) |
 
 > Nota: en el perfil `dev` de este proyecto, el default actual para `DB_PORT` es `5434` para evitar conflictos con instalaciones locales de PostgreSQL en `5432`.
 

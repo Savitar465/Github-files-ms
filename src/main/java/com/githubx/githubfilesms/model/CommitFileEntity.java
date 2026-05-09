@@ -35,7 +35,6 @@ public class CommitFileEntity {
     @Column
     private Integer changes;
 
-    @Lob
     @Column(columnDefinition = "TEXT")
     private String patch;
 }

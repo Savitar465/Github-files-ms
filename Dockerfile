@@ -20,6 +20,8 @@ USER spring:spring
 
 COPY --from=builder /build/target/github-files-ms-*.jar app.jar
 
+# Imagen: puerto interno 8080 (K8s/Docker). En local, el default de application.yaml es 8081.
+ENV SERVER_PORT=8080
 EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

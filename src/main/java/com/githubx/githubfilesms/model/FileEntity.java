@@ -41,7 +41,6 @@ public class FileEntity {
     @Column
     private Long size;
 
-    @Lob
     @Column(columnDefinition = "TEXT")
     private String content;
 

@@ -20,7 +20,7 @@ public class OpenApiConfig {
     @Value("${server.servlet.context-path:/api}")
     private String contextPath;
 
-    @Value("${server.port:8080}")
+    @Value("${server.port:8081}")
     private int serverPort;
 
     /**

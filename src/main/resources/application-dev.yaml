@@ -7,6 +7,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+    # Tras crear el esquema con Hibernate, ejecutar data.sql (datos demo).
+    defer-datasource-initialization: true
     show-sql: true
 
   sql:
@@ -17,10 +19,15 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${JWT_ISSUER_URI:http://localhost:8080/realms/github-files}
+          issuer-uri: ${JWT_ISSUER_URI:http://localhost:8180/realms/github-files}
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${SERVER_PORT:8081}
+
+app:
+  security:
+    oauth2:
+      enabled: false
 
 logging:
   level:
