@@ -14,11 +14,10 @@ spring:
     init:
       mode: never
 
+app:
   security:
     oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://localhost:8080/realms/test
+      enabled: false
 
 logging:
   level:

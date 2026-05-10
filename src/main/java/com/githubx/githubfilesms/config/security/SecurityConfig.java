@@ -1,5 +1,6 @@
 package com.githubx.githubfilesms.config.security;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,47 +21,40 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final JwtAuthConverter jwtAuthConverter;
-    private final boolean oauth2Enabled;
+    @Autowired(required = false)
+    private JwtAuthConverter jwtAuthConverter;
 
-    public SecurityConfig(JwtAuthConverter jwtAuthConverter,
-                            @Value("${app.security.oauth2.enabled:true}") boolean oauth2Enabled) {
-        this.jwtAuthConverter = jwtAuthConverter;
-        this.oauth2Enabled = oauth2Enabled;
-    }
+    @Value("${app.security.oauth2.enabled:true}")
+    private boolean oauth2Enabled;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        if (!oauth2Enabled) {
-            http
-                    .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                    .csrf(csrf -> csrf.disable())
-                    .sessionManagement(session -> session
-                            .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                    .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
-            return http.build();
-        }
-
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        // Endpoints publicos
-                        .requestMatchers("/actuator/health").permitAll()
-                        .requestMatchers("/actuator/info").permitAll()
-                        .requestMatchers("/swagger-ui/**").permitAll()
-                        .requestMatchers("/swagger-ui.html").permitAll()
-                        .requestMatchers("/v3/api-docs/**").permitAll()
-                        .requestMatchers("/error").permitAll()
-                        // Endpoints de lectura publicos (GET)
-                        .requestMatchers("GET", "/v1/repos/**").permitAll()
-                        // Todos los demas requieren autenticacion
-                        .anyRequest().authenticated())
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt
-                                .jwtAuthenticationConverter(jwtAuthConverter)));
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+        if (oauth2Enabled && jwtAuthConverter != null) {
+            http
+                    .authorizeHttpRequests(auth -> auth
+                            // Endpoints publicos
+                            .requestMatchers("/actuator/health").permitAll()
+                            .requestMatchers("/actuator/info").permitAll()
+                            .requestMatchers("/swagger-ui/**").permitAll()
+                            .requestMatchers("/swagger-ui.html").permitAll()
+                            .requestMatchers("/v3/api-docs/**").permitAll()
+                            .requestMatchers("/error").permitAll()
+                            // Endpoints de lectura publicos (GET)
+                            .requestMatchers("GET", "/v1/repos/**").permitAll()
+                            // Todos los demas requieren autenticacion
+                            .anyRequest().authenticated())
+                    .oauth2ResourceServer(oauth2 -> oauth2
+                            .jwt(jwt -> jwt
+                                    .jwtAuthenticationConverter(jwtAuthConverter)));
+        } else {
+            http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+        }
 
         return http.build();
     }
