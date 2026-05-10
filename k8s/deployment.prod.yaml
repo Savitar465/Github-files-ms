@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-files-ms
+  labels:
+    app: github-files-ms
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: github-files-ms
+  template:
+    metadata:
+      labels:
+        app: github-files-ms
+    spec:
+      containers:
+        - name: github-files-ms
+          image: ghcr.io/your-org/github-files-ms:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: github-files-ms-config
+            - secretRef:
+                name: github-files-ms-secret
+          readinessProbe:
+            httpGet:
+              path: /api/actuator/health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /api/actuator/health
+              port: http
+            initialDelaySeconds: 40
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi

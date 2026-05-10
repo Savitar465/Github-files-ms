@@ -1,0 +1,10 @@
+target/
+.git/
+.idea/
+.vscode/
+.claude/
+*.iml
+.mvn/wrapper/maven-wrapper.jar
+smithy/build/
+infra/
+k8s/

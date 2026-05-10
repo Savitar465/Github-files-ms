@@ -1,150 +1,149 @@
 # Github Files MS
 
-Microservicio base con Spring Boot + gRPC y un modulo `smithy/` para definir el contrato de API y generar artefactos (OpenAPI, cliente TypeScript y servidor Spring).
+Microservicio REST para gestion de archivos, commits y contenido de repositorios estilo GitHub.
 
-## Checklist rapido
+**Stack:** Java 17 + Spring Boot 3.3.5 + PostgreSQL + MapStruct
 
-- [ ] Instalar prerequisitos (Java, Maven/Gradle wrappers, Node para cliente TS).
-- [ ] Levantar la app principal Spring Boot.
-- [ ] Validar el contrato Smithy.
-- [ ] Generar OpenAPI y codigo derivado.
-- [ ] Integrar o ejecutar el codigo generado segun el caso de uso.
+## Requisitos
 
-## Estructura del proyecto
+- Java 17+
+- PostgreSQL 14+
+- Maven (wrapper incluido)
 
-```text
-.
-├── src/                          # App principal Spring Boot
-├── smithy/                       # Contrato Smithy + codegen
-│   ├── model/common/common.smithy
-│   └── model/files/
-│       ├── services/files-api.smithy
-│       ├── operations/*.smithy
-│       └── structures/*.smithy
-├── docs/
-├── pom.xml
-├── mvnw / mvnw.cmd
-└── README.md
+## Inicio Rapido
+
+### 1. Base de datos
+
+```bash
+# Crear base de datos
+createdb github_files_db
+
+# O con Docker
+docker run -d --name postgres-github \
+  -e POSTGRES_DB=github_files_db \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -p 5432:5432 postgres:14
+
+# Si tienes conflicto local en 5432, usa 5434 en host (recomendado para dev local)
+docker run -d --name postgres-github \
+  -e POSTGRES_DB=github_files_db \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -p 5434:5432 postgres:14
 ```
 
-## Prerequisitos
-
-- Java (el `pom.xml` declara `java.version=25`)
-- Maven Wrapper (`mvnw.cmd`, ya incluido en el repo)
-- Gradle Wrapper para Smithy (`smithy/gradlew.bat`, ya incluido)
-- Node.js + npm (solo si vas a usar/publicar el cliente TypeScript generado)
-
-## Ejecutar la app principal
-
-Desde la raiz del repo:
+### 2. Ejecutar aplicacion
 
 ```powershell
-Set-Location "C:\Projects\Github-files-ms"
-.\mvnw.cmd clean spring-boot:run
+# Modo desarrollo (crea tablas automaticamente)
+.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=dev
+
+# Modo produccion (requiere schema existente)
+.\mvnw.cmd spring-boot:run
 ```
 
-Ejecutar pruebas:
+### 3. Verificar
+
+- **API:** http://localhost:8081/api/actuator/health
+- **Swagger UI:** http://localhost:8081/api/swagger-ui.html
+
+## Estructura del Proyecto
+
+```
+src/main/java/com/githubx/githubfilesms/
+├── config/                 # Configuraciones (OpenAPI, Security)
+│   └── security/          # JWT/OAuth2
+├── controller/            # Endpoints REST
+├── dao/                   # Repositorios Spring Data
+├── dto/
+│   ├── request/          # DTOs de entrada
+│   └── response/         # DTOs de salida
+├── mapper/               # MapStruct mappers
+├── model/                # Entidades JPA
+│   └── enums/
+├── service/
+│   ├── contratos/        # Interfaces
+│   └── implementacion/   # Implementaciones
+└── util/
+    └── errorhandling/    # Excepciones y handlers
+```
+
+## Endpoints API
+
+### Files
+| Metodo | Endpoint | Descripcion |
+|--------|----------|-------------|
+| GET | `/v1/repos/{owner}/{repo}/contents` | Listar contenido raiz |
+| GET | `/v1/repos/{owner}/{repo}/contents/**` | Obtener archivo/directorio |
+| PUT | `/v1/repos/{owner}/{repo}/contents/**` | Crear archivo |
+| PATCH | `/v1/repos/{owner}/{repo}/contents/**` | Actualizar archivo |
+| DELETE | `/v1/repos/{owner}/{repo}/contents/**` | Eliminar archivo |
+| POST | `/v1/repos/{owner}/{repo}/folders` | Crear carpeta |
+| GET | `/v1/repos/{owner}/{repo}/download` | Descargar archivo |
+
+### Commits
+| Metodo | Endpoint | Descripcion |
+|--------|----------|-------------|
+| GET | `/v1/repos/{owner}/{repo}/commits` | Listar commits |
+| GET | `/v1/repos/{owner}/{repo}/commits/{sha}` | Detalle de commit |
+| GET | `/v1/repos/{owner}/{repo}/commits/{sha}/diff` | Diff del commit |
+| GET | `/v1/repos/{owner}/{repo}/compare/{base}/{head}` | Comparar branches |
+
+## Autenticacion
+
+La API usa JWT Bearer tokens. Header requerido:
+
+```
+Authorization: Bearer <jwt_token>
+```
+
+Endpoints publicos (sin auth):
+- `/actuator/health`
+- `/actuator/info`
+- `/swagger-ui/**`
+- `/v3/api-docs/**`
+
+## Variables de Entorno
+
+| Variable | Default | Descripcion |
+|----------|---------|-------------|
+| `DB_HOST` | localhost | Host PostgreSQL |
+| `DB_PORT` | 5432 | Puerto PostgreSQL |
+| `DB_NAME` | github_files_db | Nombre de la BD |
+| `DB_USERNAME` | postgres | Usuario BD |
+| `DB_PASSWORD` | postgres | Password BD |
+| `JWT_ISSUER_URI` | http://localhost:8180/realms/github-files | URI del emisor JWT (Keycloak en host **8180**: `docker run ... -p 8180:8080`) |
+| `SERVER_PORT` | 8081 | Puerto del servidor (8080 reservado a menudo a Jenkins) |
+
+> Nota: en el perfil `dev` de este proyecto, el default actual para `DB_PORT` es `5434` para evitar conflictos con instalaciones locales de PostgreSQL en `5432`.
+
+## Comandos Utiles
 
 ```powershell
-Set-Location "C:\Projects\Github-files-ms"
+# Compilar
+.\mvnw.cmd clean compile
+
+# Tests
 .\mvnw.cmd test
+
+# Empaquetar
+.\mvnw.cmd clean package -DskipTests
+
+# Ejecutar JAR
+java -jar target/github-files-ms-0.0.1-SNAPSHOT.jar
 ```
 
-## Flujo Smithy (contrato -> OpenAPI -> codigo)
+## Modulo Smithy
 
-### 1) Validar el modelo Smithy
+El contrato de API esta definido en Smithy. Ver `smithy/README.md` para:
+- Validar modelo: `.\gradlew.bat smithyBuild`
+- Generar OpenAPI: `.\gradlew.bat smithyBuild`
+- Generar cliente TS: `.\gradlew.bat generateFilesTypeScriptClient`
 
-```powershell
-Set-Location "C:\Projects\Github-files-ms\smithy"
-.\gradlew.bat smithyBuild --no-daemon
-```
+## Documentacion
 
-### 2) Generar OpenAPI
-
-El mismo `smithyBuild` genera la especificacion OpenAPI del servicio `FilesApi`.
-
-Ruta esperada:
-
-- `smithy/build/smithyprojections/<project>/github-files/openapi/FilesApi.openapi.json`
-
-### 3) Generar codigo derivado
-
-```powershell
-Set-Location "C:\Projects\Github-files-ms\smithy"
-.\gradlew.bat generateAllCodegen --no-daemon
-```
-
-Tambien puedes generar por tipo:
-
-```powershell
-Set-Location "C:\Projects\Github-files-ms\smithy"
-.\gradlew.bat generateFilesTypeScriptClient --no-daemon
-.\gradlew.bat generateFilesJavaServer --no-daemon
-```
-
-Salidas esperadas:
-
-- Cliente TS: `smithy/build/generated/typescript/files-client`
-- Server Spring (stubs): `smithy/build/generated/spring/files-module`
-
-## Como usar el codigo generado con Smithy
-
-### A) Usar OpenAPI como contrato unico
-
-1. Genera o actualiza el archivo OpenAPI con `smithyBuild`.
-2. Publica/versiona `FilesApi.openapi.json` para consumidores.
-3. Usa ese JSON en gateways, portales de API o validacion de compatibilidad.
-
-### B) Usar el cliente TypeScript generado
-
-1. Genera el cliente con `generateFilesTypeScriptClient`.
-2. En tu frontend o BFF, instala desde carpeta local.
-
-```powershell
-Set-Location "C:\Projects\Github-files-ms\smithy\build\generated\typescript\files-client"
-npm install
-npm run build
-```
-
-3. Consumelo desde otro proyecto (ejemplo local):
-
-```powershell
-npm install "C:\Projects\Github-files-ms\smithy\build\generated\typescript\files-client"
-```
-
-4. Importa el cliente y configura base URL + auth bearer en tu codigo consumidor.
-
-### C) Usar el server Spring generado (stubs)
-
-1. Genera el modulo con `generateFilesJavaServer`.
-2. Compilalo o ejecutalo de forma aislada para revisar endpoints generados.
-
-```powershell
-Set-Location "C:\Projects\Github-files-ms\smithy\build\generated\spring\files-module"
-# Si el modulo trae wrapper Maven:
-.\mvnw.cmd test
-.\mvnw.cmd install
-.\mvnw.cmd spring-boot:run //(optional)
-# Alternativa si no trae wrapper:
-mvn test
-mvn install //(optional)
-mvn spring-boot:run
-```
-
-3. Implementa la logica en delegates/services del modulo generado, o usa el codigo como base para mover interfaces/modelos al microservicio principal.
-
-## Recomendacion de trabajo
-
-- Mantener `smithy/model/files` como fuente de verdad del contrato.
-- Regenerar OpenAPI y stubs despues de cambios de contrato.
-- Evitar editar manualmente codigo generado si no hay estrategia de regeneracion controlada.
-- Si se personaliza el codigo generado, documentar que partes son "manuales" para no perderlas en la siguiente generacion.
-
-## Referencias internas
-
-- Guia de Smithy: `smithy/README.md`
-- Arquitectura general: `docs/ARCHITECTURE.md`
-- Reglas de codigo: `docs/CODE-RULES.md`
-- Contribucion: `docs/CONTRIBUTING.md`
-
-
+- [Arquitectura](docs/ARCHITECTURE.md) - Patrones y estructura
+- [Reglas de Codigo](docs/CODE-RULES.md) - Convenciones de desarrollo
+- [Contribucion](docs/CONTRIBUTING.md) - Guia para contribuir
+- [Tareas](docs/TASKS.md) - Checklist de implementacion
