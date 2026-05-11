@@ -37,6 +37,10 @@ server:
   servlet:
     context-path: /api
 
+grpc:
+  server:
+    port: ${GRPC_PORT:9093}
+
 management:
   endpoints:
     web:

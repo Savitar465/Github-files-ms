@@ -1,0 +1,221 @@
+syntax = "proto3";
+
+package com.githubx.grpc;
+
+option java_package = "com.githubx.grpc.proto";
+option java_outer_classname = "FileServiceProto";
+option java_multiple_files = true;
+
+// ─────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────
+
+enum RepoVisibility {
+  REPO_VISIBILITY_UNSPECIFIED = 0;
+  REPO_VISIBILITY_PUBLIC = 1;
+  REPO_VISIBILITY_PRIVATE = 2;
+}
+
+enum GitObjectType {
+  GIT_OBJECT_TYPE_UNSPECIFIED = 0;
+  GIT_OBJECT_TYPE_FILE = 1;
+  GIT_OBJECT_TYPE_DIRECTORY = 2;
+}
+
+// ─────────────────────────────────────────────────────────────
+// REPOSITORY MESSAGES
+// ─────────────────────────────────────────────────────────────
+
+message RepoDTO {
+  int64 id = 1;
+  string owner = 2;
+  string name = 3;
+  string full_name = 4;
+  string description = 5;
+  RepoVisibility visibility = 6;
+  string default_branch = 7;
+  string html_url = 8;
+  string created_at = 9;
+  string updated_at = 10;
+}
+
+message GetRepositoryRequest {
+  string owner = 1;
+  string repo = 2;
+}
+
+message GetRepositoryResponse {
+  RepoDTO repository = 1;
+}
+
+message ListRepositoriesRequest {
+  string owner = 1;
+}
+
+message ListRepositoriesResponse {
+  repeated RepoDTO repositories = 1;
+}
+
+message CreateRepositoryRequest {
+  string owner = 1;
+  string name = 2;
+  string description = 3;
+  RepoVisibility visibility = 4;
+  string default_branch = 5;
+}
+
+message CreateRepositoryResponse {
+  RepoDTO repository = 1;
+}
+
+message DeleteRepositoryRequest {
+  string owner = 1;
+  string repo = 2;
+}
+
+message DeleteRepositoryResponse {
+  bool success = 1;
+}
+
+// ─────────────────────────────────────────────────────────────
+// FILE MESSAGES
+// ─────────────────────────────────────────────────────────────
+
+message CommitSignatureDTO {
+  string name = 1;
+  string email = 2;
+  string date = 3;
+}
+
+message CommitSummaryDTO {
+  string sha = 1;
+  string message = 2;
+  CommitSignatureDTO author = 3;
+  CommitSignatureDTO committer = 4;
+  string html_url = 5;
+}
+
+message FileDTO {
+  string name = 1;
+  string path = 2;
+  string sha = 3;
+  GitObjectType type = 4;
+  int64 size = 5;
+  string encoding = 6;
+  string content = 7;
+  string download_url = 8;
+  string html_url = 9;
+  string last_commit_sha = 10;
+}
+
+message DirectoryEntryDTO {
+  string name = 1;
+  string path = 2;
+  string sha = 3;
+  GitObjectType type = 4;
+  int64 size = 5;
+  string download_url = 6;
+}
+
+message FileOperationDTO {
+  FileDTO content = 1;
+  CommitSummaryDTO commit = 2;
+}
+
+// ─── File read requests ───────────────────────────────────────
+
+message GetFileContentRequest {
+  string owner = 1;
+  string repo = 2;
+  string path = 3;
+  string ref = 4;
+}
+
+message GetFileContentResponse {
+  FileDTO file = 1;
+}
+
+message GetDirectoryContentsRequest {
+  string owner = 1;
+  string repo = 2;
+  string path = 3;
+  string ref = 4;
+}
+
+message GetDirectoryContentsResponse {
+  repeated DirectoryEntryDTO entries = 1;
+}
+
+// ─── File mutation requests ───────────────────────────────────
+
+message IdentityDTO {
+  string name = 1;
+  string email = 2;
+}
+
+message CreateFileRequest {
+  string owner = 1;
+  string repo = 2;
+  string path = 3;
+  bytes content = 4;
+  string message = 5;
+  string branch = 6;
+  IdentityDTO author = 7;
+  IdentityDTO committer = 8;
+}
+
+message UpdateFileRequest {
+  string owner = 1;
+  string repo = 2;
+  string path = 3;
+  string sha = 4;
+  bytes content = 5;
+  string message = 6;
+  string branch = 7;
+  string from_path = 8;
+  IdentityDTO author = 9;
+  IdentityDTO committer = 10;
+}
+
+message DeleteFileRequest {
+  string owner = 1;
+  string repo = 2;
+  string path = 3;
+  string sha = 4;
+  string message = 5;
+  string branch = 6;
+}
+
+message DeleteFileResponse {
+  CommitSummaryDTO commit = 1;
+}
+
+message CreateFolderRequest {
+  string owner = 1;
+  string repo = 2;
+  string folder_path = 3;
+  string message = 4;
+  string branch = 5;
+}
+
+// ─────────────────────────────────────────────────────────────
+// SERVICES
+// ─────────────────────────────────────────────────────────────
+
+// FilePublicApi — lectura pública, sin autenticación
+service FilePublicApi {
+  rpc GetRepository(GetRepositoryRequest) returns (GetRepositoryResponse);
+  rpc ListRepositories(ListRepositoriesRequest) returns (ListRepositoriesResponse);
+  rpc GetFileContent(GetFileContentRequest) returns (GetFileContentResponse);
+  rpc GetDirectoryContents(GetDirectoryContentsRequest) returns (GetDirectoryContentsResponse);
+}
+
+// FileApi — operaciones protegidas, requiere JWT en metadata
+service FileApi {
+  rpc CreateRepository(CreateRepositoryRequest) returns (CreateRepositoryResponse);
+  rpc DeleteRepository(DeleteRepositoryRequest) returns (DeleteRepositoryResponse);
+  rpc CreateFile(CreateFileRequest) returns (FileOperationDTO);
+  rpc UpdateFile(UpdateFileRequest) returns (FileOperationDTO);
+  rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse);
+  rpc CreateFolder(CreateFolderRequest) returns (FileOperationDTO);
+}
