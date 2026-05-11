@@ -18,10 +18,10 @@ class DtoTest {
     @Test
     void debeCrearCreateFileRequest() {
         IdentityRequest author = new IdentityRequest("John", "john@test.com");
-        CreateFileRequest request = new CreateFileRequest(
-                "SGVsbG8=", "Add file", "main", author, author);
+        byte[] content = "Hello".getBytes();
+        CreateFileRequest request = new CreateFileRequest(content, "Add file", "main", author, author);
 
-        assertEquals("SGVsbG8=", request.content());
+        assertArrayEquals(content, request.content());
         assertEquals("Add file", request.message());
         assertEquals("main", request.branch());
         assertNotNull(request.author());
@@ -29,8 +29,7 @@ class DtoTest {
 
     @Test
     void debeCrearCreateFolderRequest() {
-        CreateFolderRequest request = new CreateFolderRequest(
-                "src/new-folder", "Create folder", "develop", null, null);
+        CreateFolderRequest request = new CreateFolderRequest("src/new-folder", "Create folder", "develop");
 
         assertEquals("src/new-folder", request.path());
         assertEquals("Create folder", request.message());
@@ -39,12 +38,12 @@ class DtoTest {
 
     @Test
     void debeCrearUpdateFileRequest() {
-        UpdateFileRequest request = new UpdateFileRequest(
-                "VXBkYXRlZA==", "Update file", "sha123", "main", null, null);
+        byte[] content = "Updated".getBytes();
+        UpdateFileRequest request = new UpdateFileRequest("sha123", content, "Update file", "main", null, null, null);
 
-        assertEquals("VXBkYXRlZA==", request.content());
-        assertEquals("Update file", request.message());
         assertEquals("sha123", request.sha());
+        assertArrayEquals(content, request.content());
+        assertEquals("Update file", request.message());
         assertEquals("main", request.branch());
     }
 
@@ -73,7 +72,7 @@ class DtoTest {
     void debeCrearFileContentResponse() {
         FileContentResponse response = new FileContentResponse(
                 "file.txt", "src/file.txt", "sha123", GitObjectType.FILE,
-                100L, "content", "Y29udGVudA==", "base64", "/download", "/html");
+                100L, "base64", "Y29udGVudA==", "/download", "/html", "commitsha");
 
         assertEquals("file.txt", response.name());
         assertEquals("src/file.txt", response.path());
@@ -96,7 +95,7 @@ class DtoTest {
     void debeCrearGetFileContentBodyResponseConFile() {
         FileContentResponse file = new FileContentResponse(
                 "test.txt", "test.txt", "sha", GitObjectType.FILE, 50L,
-                "text", "dGV4dA==", "base64", "/dl", "/html");
+                "base64", "dGV4dA==", "/dl", "/html", "commitsha");
 
         GetFileContentBodyResponse response = GetFileContentBodyResponse.ofFile(file);
 
@@ -118,11 +117,12 @@ class DtoTest {
 
     @Test
     void debeCrearFileOperationResponse() {
+        CommitSignatureResponse author = new CommitSignatureResponse("Author", "a@test.com", "2026-01-01T00:00:00Z");
         FileContentResponse content = new FileContentResponse(
                 "new.txt", "new.txt", "sha", GitObjectType.FILE, 10L,
-                "data", "ZGF0YQ==", "base64", "/dl", "/html");
+                "base64", "ZGF0YQ==", "/dl", "/html", "commitsha");
         CommitSummaryResponse commit = new CommitSummaryResponse(
-                "commitsha", "/commits/commitsha", "Add file", null, null);
+                "commitsha", "Add file", author, author, "/commits/commitsha");
 
         FileOperationResponse response = new FileOperationResponse(content, commit);
 
@@ -132,8 +132,9 @@ class DtoTest {
 
     @Test
     void debeCrearDeleteFileResponse() {
+        CommitSignatureResponse author = new CommitSignatureResponse("Author", "a@test.com", "2026-01-01T00:00:00Z");
         CommitSummaryResponse commit = new CommitSummaryResponse(
-                "delsha", "/commits/delsha", "Delete file", null, null);
+                "delsha", "Delete file", author, author, "/commits/delsha");
 
         DeleteFileResponse response = new DeleteFileResponse(commit);
 
@@ -149,15 +150,13 @@ class DtoTest {
                 "Committer", "committer@test.com", "2026-01-01T00:00:00Z");
 
         CommitResponse response = new CommitResponse(
-                "sha123", "/commits/sha123", "Commit message",
-                author, committer, Collections.emptyList(), Collections.emptyList(),
-                10, 5, 3);
+                "sha123", "Commit message", author, committer,
+                "/commits/sha123", Collections.emptyList());
 
         assertEquals("sha123", response.sha());
         assertEquals("Commit message", response.message());
-        assertEquals(10, response.additions());
-        assertEquals(5, response.deletions());
-        assertEquals(3, response.changedFiles());
+        assertNotNull(response.author());
+        assertNotNull(response.committer());
     }
 
     @Test
@@ -166,7 +165,7 @@ class DtoTest {
                 "Author", "author@test.com", "2026-01-01T00:00:00Z");
 
         CommitSummaryResponse response = new CommitSummaryResponse(
-                "sha", "/commits/sha", "Summary", author, author);
+                "sha", "Summary", author, author, "/commits/sha");
 
         assertEquals("sha", response.sha());
         assertEquals("Summary", response.message());
@@ -193,9 +192,8 @@ class DtoTest {
     @Test
     void debeCrearCommitFileResponse() {
         CommitFileResponse response = new CommitFileResponse(
-                "filesha", "Main.java", "modified", 10, 5, 15, "patch");
+                "Main.java", "modified", 10, 5, 15, "patch");
 
-        assertEquals("filesha", response.sha());
         assertEquals("Main.java", response.filename());
         assertEquals("modified", response.status());
         assertEquals(10, response.additions());
@@ -204,20 +202,20 @@ class DtoTest {
 
     @Test
     void debeCrearListCommitsResponse() {
-        PaginationMeta pagination = new PaginationMeta(0, 30, 100, false, true);
+        PaginationMeta pagination = new PaginationMeta(0, 30, 100L, 4);
         ListCommitsResponse response = new ListCommitsResponse(Collections.emptyList(), pagination);
 
         assertNotNull(response.commits());
         assertNotNull(response.pagination());
-        assertEquals(100, response.pagination().totalCount());
+        assertEquals(100L, response.pagination().total());
     }
 
     @Test
     void debeCrearGetCommitResponse() {
+        CommitSignatureResponse author = new CommitSignatureResponse("Author", "a@test.com", "2026-01-01T00:00:00Z");
         CommitResponse commit = new CommitResponse(
-                "sha", "/url", "message", null, null,
-                Collections.emptyList(), Collections.emptyList(), 0, 0, 0);
-        GetCommitResponse response = new GetCommitResponse(commit);
+                "sha", "message", author, author, "/url", Collections.emptyList());
+        GetCommitResponse response = new GetCommitResponse(commit, Collections.emptyList());
 
         assertNotNull(response.commit());
     }
@@ -225,33 +223,28 @@ class DtoTest {
     @Test
     void debeCrearCompareResponse() {
         CompareResponse response = new CompareResponse(
-                "/compare/main...feature", "ahead", 10, 5, 3,
-                Collections.emptyList(), Collections.emptyList());
+                Collections.emptyList(), 10, Collections.emptyList(), 5, 3);
 
-        assertEquals("/compare/main...feature", response.url());
-        assertEquals("ahead", response.status());
-        assertEquals(10, response.aheadBy());
-        assertEquals(5, response.behindBy());
-        assertEquals(3, response.totalCommits());
+        assertEquals(10, response.totalCommits());
+        assertEquals(5, response.aheadBy());
+        assertEquals(3, response.behindBy());
     }
 
     @Test
     void debeCrearPaginationMeta() {
-        PaginationMeta meta = new PaginationMeta(2, 30, 150, true, true);
+        PaginationMeta meta = new PaginationMeta(2, 30, 150L, 5);
 
         assertEquals(2, meta.page());
         assertEquals(30, meta.perPage());
-        assertEquals(150, meta.totalCount());
-        assertTrue(meta.hasPrevious());
-        assertTrue(meta.hasNext());
+        assertEquals(150L, meta.total());
+        assertEquals(5, meta.totalPages());
     }
 
     @Test
     void debeCrearRepositoryResponse() {
         RepositoryResponse response = new RepositoryResponse(
-                1L, "owner", "repo", "Description",
-                RepoVisibility.PUBLIC, "main", "owner/repo",
-                "/v1/repos/owner/repo", null, null);
+                1L, "owner", "repo", "owner/repo", "Description",
+                RepoVisibility.PUBLIC, "main", "/v1/repos/owner/repo", null, null);
 
         assertEquals(1L, response.id());
         assertEquals("owner", response.owner());

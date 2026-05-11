@@ -172,7 +172,6 @@ class CommitMapperTest {
     void debeMapearCommitFileEntity() {
         CommitFileEntity entity = CommitFileEntity.builder()
                 .id(1L)
-                .sha("filesha")
                 .filename("src/Main.java")
                 .status("modified")
                 .additions(10)
@@ -184,7 +183,6 @@ class CommitMapperTest {
         CommitFileResponse result = mapper.toCommitFileResponse(entity);
 
         assertNotNull(result);
-        assertEquals("filesha", result.sha());
         assertEquals("src/Main.java", result.filename());
         assertEquals("modified", result.status());
         assertEquals(10, result.additions());
@@ -197,7 +195,6 @@ class CommitMapperTest {
     void debeMapearListaDeCommitFileEntities() {
         CommitFileEntity file1 = CommitFileEntity.builder()
                 .id(1L)
-                .sha("sha1")
                 .filename("file1.txt")
                 .status("added")
                 .additions(50)
@@ -207,7 +204,6 @@ class CommitMapperTest {
 
         CommitFileEntity file2 = CommitFileEntity.builder()
                 .id(2L)
-                .sha("sha2")
                 .filename("file2.txt")
                 .status("deleted")
                 .additions(0)

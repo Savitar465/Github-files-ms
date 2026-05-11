@@ -45,18 +45,20 @@ class V1ApiDelegateImplTest {
 
     private FileContentResponse fileContentResponse;
     private CommitSummaryResponse commitSummaryResponse;
+    private CommitSignatureResponse authorSignature;
+    private CommitSignatureResponse committerSignature;
 
     @BeforeEach
     void setUp() {
+        authorSignature = new CommitSignatureResponse("Author", "author@test.com", "2026-01-01T00:00:00Z");
+        committerSignature = new CommitSignatureResponse("Committer", "committer@test.com", "2026-01-01T00:00:00Z");
+
         fileContentResponse = new FileContentResponse(
                 "README.md", "README.md", "abc123", GitObjectType.FILE,
-                100L, "# Hello", "IyBIZWxsbw==", "base64",
-                "/download/url", "/html/url");
+                100L, "base64", "IyBIZWxsbw==", "/download/url", "/html/url", "commit123");
 
         commitSummaryResponse = new CommitSummaryResponse(
-                "def456", "/commits/def456", "Initial commit",
-                new CommitSignatureResponse("Author", "author@test.com", "2026-01-01T00:00:00Z"),
-                new CommitSignatureResponse("Committer", "committer@test.com", "2026-01-01T00:00:00Z"));
+                "def456", "Initial commit", authorSignature, committerSignature, "/commits/def456");
     }
 
     @Test
@@ -125,12 +127,13 @@ class V1ApiDelegateImplTest {
     @Test
     void debeCrearArchivo() {
         CreateFileBody createBody = new CreateFileBody();
-        createBody.setContent("SGVsbG8=");
+        createBody.setContent("SGVsbG8=".getBytes());
         createBody.setMessage("Add file");
         createBody.setBranch("main");
 
-        CreateFileRequest request = new CreateFileRequest("SGVsbG8=", "Add file", "main", null, null);
-        FileOperationResponse serviceResponse = new FileOperationResponse(fileContentResponse, commitSummaryResponse);
+        CreateFileRequest request = new CreateFileRequest("SGVsbG8=".getBytes(), "Add file", "main", null, null);
+        com.githubx.githubfilesms.dto.response.FileOperationResponse serviceResponse =
+                new com.githubx.githubfilesms.dto.response.FileOperationResponse(fileContentResponse, commitSummaryResponse);
         com.smithy.g.files.server.files.model.FileOperationResponse smithyResponse =
                 new com.smithy.g.files.server.files.model.FileOperationResponse();
 
@@ -149,13 +152,14 @@ class V1ApiDelegateImplTest {
     @Test
     void debeActualizarArchivo() {
         UpdateFileBody updateBody = new UpdateFileBody();
-        updateBody.setContent("VXBkYXRlZA==");
+        updateBody.setContent("VXBkYXRlZA==".getBytes());
         updateBody.setMessage("Update file");
         updateBody.setSha("abc123");
         updateBody.setBranch("main");
 
-        UpdateFileRequest request = new UpdateFileRequest("VXBkYXRlZA==", "Update file", "abc123", "main", null, null);
-        FileOperationResponse serviceResponse = new FileOperationResponse(fileContentResponse, commitSummaryResponse);
+        UpdateFileRequest request = new UpdateFileRequest("abc123", "VXBkYXRlZA==".getBytes(), "Update file", "main", null, null, null);
+        com.githubx.githubfilesms.dto.response.FileOperationResponse serviceResponse =
+                new com.githubx.githubfilesms.dto.response.FileOperationResponse(fileContentResponse, commitSummaryResponse);
         com.smithy.g.files.server.files.model.FileOperationResponse smithyResponse =
                 new com.smithy.g.files.server.files.model.FileOperationResponse();
 
@@ -193,8 +197,9 @@ class V1ApiDelegateImplTest {
         createBody.setMessage("Create folder");
         createBody.setBranch("main");
 
-        CreateFolderRequest request = new CreateFolderRequest("src/new-folder", "Create folder", "main", null, null);
-        FileOperationResponse serviceResponse = new FileOperationResponse(fileContentResponse, commitSummaryResponse);
+        CreateFolderRequest request = new CreateFolderRequest("src/new-folder", "Create folder", "main");
+        com.githubx.githubfilesms.dto.response.FileOperationResponse serviceResponse =
+                new com.githubx.githubfilesms.dto.response.FileOperationResponse(fileContentResponse, commitSummaryResponse);
         com.smithy.g.files.server.files.model.FileOperationResponse smithyResponse =
                 new com.smithy.g.files.server.files.model.FileOperationResponse();
 
@@ -213,7 +218,7 @@ class V1ApiDelegateImplTest {
     void debeListarCommits() {
         ListCommitsResponse serviceResponse = new ListCommitsResponse(
                 Collections.emptyList(),
-                new PaginationMeta(0, 30, 0, false, false));
+                new com.githubx.githubfilesms.dto.response.PaginationMeta(0, 30, 0L, 0));
         ListCommitsBody smithyResponse = new ListCommitsBody();
 
         when(commitService.listCommits("owner", "repo", "main", null, 1, 30))
@@ -231,7 +236,7 @@ class V1ApiDelegateImplTest {
     void debeListarCommitsConValoresPorDefecto() {
         ListCommitsResponse serviceResponse = new ListCommitsResponse(
                 Collections.emptyList(),
-                new PaginationMeta(0, 30, 0, false, false));
+                new com.githubx.githubfilesms.dto.response.PaginationMeta(0, 30, 0L, 0));
         ListCommitsBody smithyResponse = new ListCommitsBody();
 
         when(commitService.listCommits("owner", "repo", null, null, 0, 30))
@@ -248,11 +253,9 @@ class V1ApiDelegateImplTest {
     @Test
     void debeObtenerCommit() {
         CommitResponse commitResponse = new CommitResponse(
-                "sha123", "/commits/sha123", "Commit message",
-                new CommitSignatureResponse("Author", "author@test.com", "2026-01-01T00:00:00Z"),
-                new CommitSignatureResponse("Committer", "committer@test.com", "2026-01-01T00:00:00Z"),
-                Collections.emptyList(), Collections.emptyList(), 1, 1, 1);
-        GetCommitResponse serviceResponse = new GetCommitResponse(commitResponse);
+                "sha123", "Commit message", authorSignature, committerSignature,
+                "/commits/sha123", Collections.emptyList());
+        GetCommitResponse serviceResponse = new GetCommitResponse(commitResponse, Collections.emptyList());
         GetCommitBody smithyResponse = new GetCommitBody();
 
         when(commitService.getCommit("owner", "repo", "sha123")).thenReturn(serviceResponse);
@@ -279,8 +282,7 @@ class V1ApiDelegateImplTest {
     @Test
     void debeCompararCommits() {
         CompareResponse serviceResponse = new CompareResponse(
-                "/compare/main...feature", "ahead", 5, 2, 3,
-                Collections.emptyList(), Collections.emptyList());
+                Collections.emptyList(), 5, Collections.emptyList(), 3, 2);
         CompareDTO smithyResponse = new CompareDTO();
 
         when(commitService.compareCommits("owner", "repo", "main", "feature"))

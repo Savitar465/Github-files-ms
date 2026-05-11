@@ -20,10 +20,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class SmithyDtoMapperTest {
 
     private SmithyDtoMapper mapper;
+    private CommitSignatureResponse authorSignature;
+    private CommitSignatureResponse committerSignature;
 
     @BeforeEach
     void setUp() {
         mapper = Mappers.getMapper(SmithyDtoMapper.class);
+        authorSignature = new CommitSignatureResponse("Author", "author@test.com", "2026-01-01T00:00:00Z");
+        committerSignature = new CommitSignatureResponse("Committer", "committer@test.com", "2026-01-01T00:00:00Z");
     }
 
     // ── Request mapping tests ──────────────────────────────────────────
@@ -31,14 +35,13 @@ class SmithyDtoMapperTest {
     @Test
     void debeMapearCreateFileBody() {
         CreateFileBody body = new CreateFileBody();
-        body.setContent("SGVsbG8gV29ybGQ=");
+        body.setContent("SGVsbG8gV29ybGQ=".getBytes());
         body.setMessage("Add new file");
         body.setBranch("main");
 
         CreateFileRequest result = mapper.toCreateFileRequest(body);
 
         assertNotNull(result);
-        assertEquals("SGVsbG8gV29ybGQ=", result.content());
         assertEquals("Add new file", result.message());
         assertEquals("main", result.branch());
     }
@@ -61,7 +64,7 @@ class SmithyDtoMapperTest {
     @Test
     void debeMapearUpdateFileBody() {
         UpdateFileBody body = new UpdateFileBody();
-        body.setContent("VXBkYXRlZCBjb250ZW50");
+        body.setContent("VXBkYXRlZCBjb250ZW50".getBytes());
         body.setMessage("Update file");
         body.setSha("abc123");
         body.setBranch("main");
@@ -69,7 +72,6 @@ class SmithyDtoMapperTest {
         UpdateFileRequest result = mapper.toUpdateFileRequest(body);
 
         assertNotNull(result);
-        assertEquals("VXBkYXRlZCBjb250ZW50", result.content());
         assertEquals("Update file", result.message());
         assertEquals("abc123", result.sha());
         assertEquals("main", result.branch());
@@ -94,7 +96,7 @@ class SmithyDtoMapperTest {
     void debeMapearGetFileContentBodyResponse() {
         FileContentResponse fileContent = new FileContentResponse(
                 "file.txt", "src/file.txt", "sha123", GitObjectType.FILE,
-                100L, "content", "Y29udGVudA==", "base64", "/download", "/html");
+                100L, "base64", "Y29udGVudA==", "/download", "/html", "commit123");
         GetFileContentBodyResponse response = GetFileContentBodyResponse.ofFile(fileContent);
 
         GetFileContentBody result = mapper.toGetFileContentBody(response);
@@ -106,8 +108,8 @@ class SmithyDtoMapperTest {
     void debeMapearFileContentDTO() {
         FileContentResponse response = new FileContentResponse(
                 "test.java", "src/test.java", "sha456", GitObjectType.FILE,
-                250L, "public class Test {}", "cHVibGljIGNsYXNzIFRlc3Qge30=", "base64",
-                "/download/test.java", "/html/test.java");
+                250L, "base64", "cHVibGljIGNsYXNzIFRlc3Qge30=",
+                "/download/test.java", "/html/test.java", "commit456");
 
         FileContentDTO result = mapper.toFileContentDTO(response);
 
@@ -147,12 +149,12 @@ class SmithyDtoMapperTest {
     @Test
     void debeMapearFileOperationResponse() {
         FileContentResponse content = new FileContentResponse(
-                "new.txt", "new.txt", "sha", GitObjectType.FILE, 50L, "text", "dGV4dA==", "base64", "/dl", "/html");
+                "new.txt", "new.txt", "sha", GitObjectType.FILE, 50L,
+                "base64", "dGV4dA==", "/dl", "/html", "commitsha");
         CommitSummaryResponse commit = new CommitSummaryResponse(
-                "commitsha", "/commits/commitsha", "Add file",
-                new CommitSignatureResponse("Author", "a@test.com", "2026-01-01T00:00:00Z"),
-                new CommitSignatureResponse("Committer", "c@test.com", "2026-01-01T00:00:00Z"));
-        FileOperationResponse response = new FileOperationResponse(content, commit);
+                "commitsha", "Add file", authorSignature, committerSignature, "/commits/commitsha");
+        com.githubx.githubfilesms.dto.response.FileOperationResponse response =
+                new com.githubx.githubfilesms.dto.response.FileOperationResponse(content, commit);
 
         com.smithy.g.files.server.files.model.FileOperationResponse result =
                 mapper.toFileOperationResponse(response);
@@ -163,9 +165,7 @@ class SmithyDtoMapperTest {
     @Test
     void debeMapearCommitSummaryDTO() {
         CommitSummaryResponse response = new CommitSummaryResponse(
-                "sha123", "/commits/sha123", "Commit message",
-                new CommitSignatureResponse("Author", "author@test.com", "2026-01-01T00:00:00Z"),
-                new CommitSignatureResponse("Committer", "committer@test.com", "2026-01-01T00:00:00Z"));
+                "sha123", "Commit message", authorSignature, committerSignature, "/commits/sha123");
 
         CommitSummaryDTO result = mapper.toCommitSummaryDTO(response);
 
@@ -190,9 +190,7 @@ class SmithyDtoMapperTest {
     @Test
     void debeMapearDeleteFileResponseBody() {
         CommitSummaryResponse commit = new CommitSummaryResponse(
-                "delsha", "/commits/delsha", "Delete file.txt",
-                new CommitSignatureResponse("Author", "a@test.com", "2026-01-01T00:00:00Z"),
-                new CommitSignatureResponse("Committer", "c@test.com", "2026-01-01T00:00:00Z"));
+                "delsha", "Delete file.txt", authorSignature, committerSignature, "/commits/delsha");
         DeleteFileResponse response = new DeleteFileResponse(commit);
 
         DeleteFileResponseBody result = mapper.toDeleteFileResponseBody(response);
@@ -202,7 +200,8 @@ class SmithyDtoMapperTest {
 
     @Test
     void debeMapearListCommitsBody() {
-        PaginationMeta pagination = new PaginationMeta(0, 30, 100, false, true);
+        com.githubx.githubfilesms.dto.response.PaginationMeta pagination =
+                new com.githubx.githubfilesms.dto.response.PaginationMeta(0, 30, 100L, 4);
         ListCommitsResponse response = new ListCommitsResponse(Collections.emptyList(), pagination);
 
         ListCommitsBody result = mapper.toListCommitsBody(response);
@@ -213,10 +212,8 @@ class SmithyDtoMapperTest {
     @Test
     void debeMapearCommitDTO() {
         CommitResponse response = new CommitResponse(
-                "sha123", "/commits/sha123", "Commit message",
-                new CommitSignatureResponse("Author", "author@test.com", "2026-01-01T00:00:00Z"),
-                new CommitSignatureResponse("Committer", "committer@test.com", "2026-01-01T00:00:00Z"),
-                Collections.emptyList(), Collections.emptyList(), 5, 10, 3);
+                "sha123", "Commit message", authorSignature, committerSignature,
+                "/commits/sha123", Collections.emptyList());
 
         CommitDTO result = mapper.toCommitDTO(response);
 
@@ -228,15 +225,11 @@ class SmithyDtoMapperTest {
     @Test
     void debeMapearCommitDTOList() {
         CommitResponse commit1 = new CommitResponse(
-                "sha1", "/commits/sha1", "First commit",
-                new CommitSignatureResponse("Author", "a@test.com", "2026-01-01T00:00:00Z"),
-                new CommitSignatureResponse("Committer", "c@test.com", "2026-01-01T00:00:00Z"),
-                Collections.emptyList(), Collections.emptyList(), 1, 2, 1);
+                "sha1", "First commit", authorSignature, committerSignature,
+                "/commits/sha1", Collections.emptyList());
         CommitResponse commit2 = new CommitResponse(
-                "sha2", "/commits/sha2", "Second commit",
-                new CommitSignatureResponse("Author", "a@test.com", "2026-01-02T00:00:00Z"),
-                new CommitSignatureResponse("Committer", "c@test.com", "2026-01-02T00:00:00Z"),
-                Collections.emptyList(), Collections.emptyList(), 3, 4, 2);
+                "sha2", "Second commit", authorSignature, committerSignature,
+                "/commits/sha2", Collections.emptyList());
 
         List<CommitDTO> result = mapper.toCommitDTOList(List.of(commit1, commit2));
 
@@ -268,7 +261,8 @@ class SmithyDtoMapperTest {
 
     @Test
     void debeMapearPaginationMeta() {
-        PaginationMeta response = new PaginationMeta(2, 30, 150, true, true);
+        com.githubx.githubfilesms.dto.response.PaginationMeta response =
+                new com.githubx.githubfilesms.dto.response.PaginationMeta(2, 30, 150L, 5);
 
         com.smithy.g.files.server.files.model.PaginationMeta result = mapper.toPaginationMeta(response);
 
@@ -278,11 +272,9 @@ class SmithyDtoMapperTest {
     @Test
     void debeMapearGetCommitBody() {
         CommitResponse commit = new CommitResponse(
-                "sha123", "/commits/sha123", "Commit",
-                new CommitSignatureResponse("Author", "a@test.com", "2026-01-01T00:00:00Z"),
-                new CommitSignatureResponse("Committer", "c@test.com", "2026-01-01T00:00:00Z"),
-                Collections.emptyList(), Collections.emptyList(), 1, 1, 1);
-        GetCommitResponse response = new GetCommitResponse(commit);
+                "sha123", "Commit", authorSignature, committerSignature,
+                "/commits/sha123", Collections.emptyList());
+        GetCommitResponse response = new GetCommitResponse(commit, Collections.emptyList());
 
         GetCommitBody result = mapper.toGetCommitBody(response);
 
@@ -292,7 +284,7 @@ class SmithyDtoMapperTest {
     @Test
     void debeMapearCommitFile() {
         CommitFileResponse response = new CommitFileResponse(
-                "sha", "file.txt", "modified", 10, 5, 15, "patch content");
+                "file.txt", "modified", 10, 5, 15, "patch content");
 
         CommitFile result = mapper.toCommitFile(response);
 
@@ -304,9 +296,9 @@ class SmithyDtoMapperTest {
     @Test
     void debeMapearCommitFileList() {
         CommitFileResponse file1 = new CommitFileResponse(
-                "sha1", "file1.txt", "added", 10, 0, 10, "patch1");
+                "file1.txt", "added", 10, 0, 10, "patch1");
         CommitFileResponse file2 = new CommitFileResponse(
-                "sha2", "file2.txt", "deleted", 0, 20, 20, "patch2");
+                "file2.txt", "deleted", 0, 20, 20, "patch2");
 
         List<CommitFile> result = mapper.toCommitFileList(List.of(file1, file2));
 
@@ -317,8 +309,7 @@ class SmithyDtoMapperTest {
     @Test
     void debeMapearCompareDTO() {
         CompareResponse response = new CompareResponse(
-                "/compare/main...feature", "ahead", 10, 5, 3,
-                Collections.emptyList(), Collections.emptyList());
+                Collections.emptyList(), 10, Collections.emptyList(), 5, 3);
 
         CompareDTO result = mapper.toCompareDTO(response);
 

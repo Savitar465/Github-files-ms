@@ -178,7 +178,6 @@ class EntityTest {
     void debeCrearCommitFileEntityConBuilder() {
         CommitFileEntity entity = CommitFileEntity.builder()
                 .id(1L)
-                .sha("filesha")
                 .filename("Main.java")
                 .status("modified")
                 .additions(10)
@@ -188,7 +187,6 @@ class EntityTest {
                 .build();
 
         assertEquals(1L, entity.getId());
-        assertEquals("filesha", entity.getSha());
         assertEquals("Main.java", entity.getFilename());
         assertEquals("modified", entity.getStatus());
         assertEquals(10, entity.getAdditions());
@@ -200,7 +198,7 @@ class EntityTest {
     void debeCrearCommitFileEntityConNoArgsConstructor() {
         CommitFileEntity entity = new CommitFileEntity();
         assertNull(entity.getId());
-        assertNull(entity.getSha());
+        assertNull(entity.getFilename());
     }
 
     // ── Enum tests ─────────────────────────────────────────────────────
