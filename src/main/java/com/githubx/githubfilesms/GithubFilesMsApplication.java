@@ -7,7 +7,8 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication
 @ComponentScan(basePackages = {
     "com.githubx.githubfilesms",
-    "com.smithy.g.files.server.files"
+    "com.smithy.g.files.server.files",
+    "org.openapitools.configuration"
 })
 public class GithubFilesMsApplication {
 
