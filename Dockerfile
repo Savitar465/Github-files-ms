@@ -1,6 +1,13 @@
 # syntax=docker/dockerfile:1
 
 FROM eclipse-temurin:25-jre
+LABEL org.opencontainers.image.title="Github-files-ms" \
+  org.opencontainers.image.description="Microservicio de gestion de archivos y contenido" \
+  org.opencontainers.image.vendor="Githubx" \
+  org.opencontainers.image.url="https://github.com/Savitar465/Github-files-ms" \
+  org.opencontainers.image.source="https://github.com/Savitar465/Github-files-ms" \
+  org.opencontainers.image.documentation="https://github.com/Savitar465/Github-files-ms/blob/main/README.md" \
+  org.opencontainers.image.authors="Savitar465"
 
 WORKDIR /app
 
