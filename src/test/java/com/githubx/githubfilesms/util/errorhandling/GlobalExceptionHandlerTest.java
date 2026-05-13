@@ -9,8 +9,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -117,30 +115,6 @@ class GlobalExceptionHandlerTest {
         assertEquals(400, response.getBody().status());
         assertTrue(response.getBody().message().contains("id"));
         assertTrue(response.getBody().message().contains("invalid"));
-    }
-
-    @Test
-    void debeHandlearAccessDeniedException() {
-        AccessDeniedException ex = new AccessDeniedException("Access denied");
-
-        ResponseEntity<ErrorResponse> response = exceptionHandler.handleAccessDeniedException(ex, request);
-
-        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(403, response.getBody().status());
-        assertEquals("Acceso denegado", response.getBody().message());
-    }
-
-    @Test
-    void debeHandlearAuthenticationException() {
-        BadCredentialsException ex = new BadCredentialsException("Bad credentials");
-
-        ResponseEntity<ErrorResponse> response = exceptionHandler.handleAuthenticationException(ex, request);
-
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(401, response.getBody().status());
-        assertEquals("No autenticado", response.getBody().message());
     }
 
     @Test

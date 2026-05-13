@@ -7,12 +7,3 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-
-app:
-  security:
-    oauth2:
-      enabled: false
-
-logging:
-  level:
-    org.springframework.security: INFO

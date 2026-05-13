@@ -1,9 +1,11 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
   application:
     name: Github-files-ms
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:github_files_db}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5434}/${DB_NAME:github_files_db}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
@@ -26,16 +28,16 @@ spring:
     init:
       mode: never
 
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${JWT_ISSUER_URI:http://localhost:8180/realms/github-files}
-
 server:
-  port: ${SERVER_PORT:8081}
+  port: ${SERVER_PORT:8084}
   servlet:
     context-path: /api
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
 
 management:
   endpoints:
@@ -54,12 +56,5 @@ logging:
   level:
     root: INFO
     com.githubx.githubfilesms: DEBUG
-    org.springframework.security: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-
-# Desactivar OAuth2 solo para entornos controlados (p. ej. smoke test en K8s local sin IdP).
-app:
-  security:
-    oauth2:
-      enabled: ${APP_SECURITY_OAUTH2_ENABLED:true}

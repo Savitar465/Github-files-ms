@@ -6,7 +6,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     # Tras crear el esquema con Hibernate, ejecutar data.sql (datos demo).
     defer-datasource-initialization: true
     show-sql: true
@@ -15,24 +15,12 @@ spring:
     init:
       mode: always
 
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${JWT_ISSUER_URI:http://localhost:8180/realms/github-files}
-
 server:
-  port: ${SERVER_PORT:8081}
-
-app:
-  security:
-    oauth2:
-      enabled: false
+  port: ${SERVER_PORT:8084}
 
 logging:
   level:
     root: INFO
     com.githubx.githubfilesms: DEBUG
-    org.springframework.security: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
